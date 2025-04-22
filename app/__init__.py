@@ -20,11 +20,15 @@ def create_app():
     from app.models.attributes import Attribute
     from app.models.sources import Source
     from app.models.results import Result
-
+    
     # Register blueprints
     from app.api.attributes import attributes_bp
     from app.api.sources import sources_bp
+    from app.api.crawl import crawler_bp
+    # from app.api.web import web_bp
     app.register_blueprint(attributes_bp, url_prefix="/api")
     app.register_blueprint(sources_bp, url_prefix="/api")
+    app.register_blueprint(crawler_bp, url_prefix="/api")
+    # app.register_blueprint(web_bp)
 
     return app

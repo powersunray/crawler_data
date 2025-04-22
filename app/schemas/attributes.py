@@ -1,25 +1,24 @@
 from pydantic import BaseModel
 from uuid import UUID
 from typing import Optional
-from datetime import datetime
 
 class AttributeBase(BaseModel):
-    keyword: str
-    source_id: UUID
-    is_active: Optional[bool] = True
+    name: str
+    type: str
+    description: str
+    source_id: UUID  # Khóa ngoại liên kết với sources.id
 
 class AttributeCreate(AttributeBase):
-    pass
+    pass  # Kế thừa tất cả để tạo mới
 
 class AttributeUpdate(BaseModel):
-    keyword: Optional[str]
-    source_id: Optional[UUID]
-    is_active: Optional[bool]
+    name: Optional[str] = None
+    type: Optional[str] = None
+    description: Optional[str] = None
+    source_id: Optional[UUID] = None  # Các trường là tùy chọn để cập nhật
 
 class AttributeOut(AttributeBase):
-    id: UUID
-    created_at: datetime
-    updated_at: datetime
+    id: UUID  # Thêm id để trả về thông tin đầy đủ
 
     class Config:
         from_attributes = True

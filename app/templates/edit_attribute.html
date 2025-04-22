@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Attribute</title>
+</head>
+<body>
+    <h1>Edit Attribute</h1>
+    <form method="POST">
+        <label for="keyword">Keyword:</label>
+        <input type="text" id="keyword" name="keyword" value="{{ attribute.keyword }}" required><br>
+        <label for="source_id">Source ID (UUID):</label>
+        <input type="text" id="source_id" name="source_id" value="{{ attribute.source_id }}" required><br>
+        <label for="is_active">Is Active:</label>
+        <input type="checkbox" id="is_active" name="is_active" {% if attribute.is_active %}checked{% endif %}><br>
+        <button type="submit">Update</button>
+    </form>
+</body>
+</html>

@@ -1,28 +1,28 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from uuid import UUID
-from typing import Optional, Dict
+from typing import Optional
 
 class SourceBase(BaseModel):
-    name: str
-    url: str  # Sửa từ HttpUrl thành str
-    description: Optional[str]
-    selectors: Dict[str, str]
-    is_active: Optional[bool] = True
+    url: str  # Validate URL hợp lệ
+    link_selector: str
+    threads: int
+    description: str
+    card_information: str
+    status: Optional[str] = "ACTIVE"  # Giá trị mặc định là "ACTIVE"
 
 class SourceCreate(SourceBase):
-    pass
+    pass  # Kế thừa tất cả các trường từ SourceBase để tạo mới
 
 class SourceUpdate(BaseModel):
-    name: Optional[str]
-    url: Optional[str]
-    description: Optional[str]
-    selectors: Optional[Dict[str, str]]
-    is_active: Optional[bool]
+    url: Optional[str] = None
+    link_selector: Optional[str] = None
+    threads: Optional[int] = None
+    description: Optional[str] = None
+    card_information: Optional[str] = None
+    status: Optional[str] = None  # Các trường là tùy chọn để cập nhật
 
 class SourceOut(SourceBase):
-    id: UUID
-    # created_at: datetime
-    # updated_at: datetime
+    id: UUID  # Thêm id để trả về thông tin đầy đủ
 
     class Config:
-        from_attributes = True
+        from_attributes = True  # Cho phép chuyển đổi từ SQLAlchemy object sang Pydantic

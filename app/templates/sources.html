@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sources</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Sources</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Description</th>
+                <th>Selectors</th>
+                <th>Is Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for source in sources %}
+            <tr>
+                <td>{{ source.id }}</td>
+                <td>{{ source.name }}</td>
+                <td>{{ source.url }}</td>
+                <td>{{ source.description }}</td>
+                <td>{{ source.selectors }}</td>
+                <td>{{ source.is_active }}</td>
+                <td>
+                    <a href="{{ url_for('web.edit_source', id=source.id) }}">Edit</a>
+                    <a href="{{ url_for('web.delete_source', id=source.id) }}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('web.add_source') }}">Add New Source</a>
+</body>
+</html>

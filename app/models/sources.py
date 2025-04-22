@@ -1,14 +1,15 @@
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy import Column, String, Boolean, DateTime, func, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer
 from uuid import uuid4
 from app import db
 
 class Source(db.Model):
     __tablename__ = "sources"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name = Column(String(100), nullable=False)
-    url = Column(String(255), nullable=False)
-    description = Column(String)
-    selectors = Column(JSONB, nullable=False)
-    is_active = Column(Boolean, default=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, unique=True, nullable=False)
+    url = Column(String(500), nullable=False)                
+    link_selector = Column(String(255), nullable=False)      
+    status = db.Column(String(20), nullable=False, default='ACTIVE')    
+    threads = Column(Integer, nullable=False)
+    description = Column(String(255), nullable=False)      
+    card_information = Column(String(255), nullable=False)  

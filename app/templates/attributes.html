@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attributes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Attributes</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Keyword</th>
+                <th>Source ID</th>
+                <th>Is Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attribute in attributes %}
+            <tr>
+                <td>{{ attribute.id }}</td>
+                <td>{{ attribute.keyword }}</td>
+                <td>{{ attribute.source_id }}</td>
+                <td>{{ attribute.is_active }}</td>
+                <td>
+                    <a href="{{ url_for('web.edit_attribute', id=attribute.id) }}">Edit</a>
+                    <a href="{{ url_for('web.delete_attribute', id=attribute.id) }}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('web.add_attribute') }}">Add New Attribute</a>
+</body>
+</html>

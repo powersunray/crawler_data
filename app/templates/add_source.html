@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Source</title>
+</head>
+<body>
+    <h1>Add New Source</h1>
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br>
+        <label for="url">URL:</label>
+        <input type="text" id="url" name="url" required><br>
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description"><br>
+        <label for="selectors">Selectors (JSON):</label>
+        <input type="text" id="selectors" name="selectors" required><br>
+        <label for="is_active">Is Active:</label>
+        <input type="checkbox" id="is_active" name="is_active" checked><br>
+        <button type="submit">Save</button>
+    </form>
+</body>
+</html>
