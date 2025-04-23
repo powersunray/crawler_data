@@ -1,3 +1,4 @@
+#crawler.py
 import time
 import json
 import uuid
@@ -5,7 +6,7 @@ import requests
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from pydantic import create_model, BaseModel
-import undetected_chromedriver as uc
+# import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -16,6 +17,21 @@ from app import db
 from app.models.sources import Source
 from app.models.attributes import Attribute
 from app.models.results import Result
+
+from flask import current_app
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise ValueError("GOOGLE_API_KEY not found in environment variables")
+genai.configure(api_key=GOOGLE_API_KEY)
+
 # Global stop event for thread control
 stop_event = threading.Event()
 
@@ -24,40 +40,77 @@ def stopCrawl():
     stop_event.set()
     print("Stop signal received. Terminating crawler threads...")
 
+#! get_all_web_crawl()
+# def get_all_web_crawl() -> List[Dict]:
+#     """Fetch all active web crawl sources from the database"""
+#     try:
+#         sources = Source.query.filter_by(status='ACTIVE').all()
+#         return [
+#             {
+#                 'id': str(source.id),
+#                 'url': source.url,
+#                 'link_selector': source.link_selector,
+#                 'threads': source.threads,
+#                 'description': source.description,
+#                 'card_information': source.card_information
+#             }
+#             for source in sources
+#         ]
+#     except Exception as e:
+#         print(f"Error fetching web crawl sources: {e}")
+#         return []
+
 def get_all_web_crawl() -> List[Dict]:
-    """Fetch all active web crawl sources from the database"""
-    try:
-        sources = Source.query.filter_by(status='ACTIVE').all()
-        return [
-            {
-                'id': str(source.id),
-                'url': source.url,
-                'link_selector': source.link_selector,
-                'threads': source.threads,
-                'description': source.description,
-                'card_information': source.card_information
-            }
-            for source in sources
-        ]
-    except Exception as e:
-        print(f"Error fetching web crawl sources: {e}")
-        return []
+    with current_app.app_context():
+        try:
+            sources = Source.query.filter_by(status='ACTIVE').all()
+            return [
+                {
+                    'id': str(source.id),
+                    'url': source.url,
+                    'link_selector': source.link_selector,
+                    'threads': source.threads,
+                    'description': source.description,
+                    'card_information': source.card_information
+                }
+                for source in sources
+            ]
+        except Exception as e:
+            print(f"Error fetching web crawl sources: {e}")
+            return []
+
+#! get_web_crawl_attributes...
+# def get_web_crawl_attributes_by_web_crawl_id(web_id: str) -> List[Dict]:
+#     """Fetch attributes for a specific web crawl source"""
+#     try:
+#         attributes = Attribute.query.filter_by(source_id=uuid.UUID(web_id)).all()
+#         return [
+#             {
+#                 'name': attr.name,
+#                 'type': attr.type,
+#                 'description': attr.description
+#             }
+#             for attr in attributes
+#         ]
+#     except Exception as e:
+#         print(f"Error fetching attributes for web crawl ID {web_id}: {e}")
+#         return []
 
 def get_web_crawl_attributes_by_web_crawl_id(web_id: str) -> List[Dict]:
-    """Fetch attributes for a specific web crawl source"""
-    try:
-        attributes = Attribute.query.filter_by(source_id=uuid.UUID(web_id)).all()
-        return [
-            {
-                'name': attr.name,
-                'type': attr.type,
-                'description': attr.description
-            }
-            for attr in attributes
-        ]
-    except Exception as e:
-        print(f"Error fetching attributes for web crawl ID {web_id}: {e}")
-        return []
+    with current_app.app_context():
+        try:
+            attributes = Attribute.query.filter_by(source_id=uuid.UUID(web_id)).all()
+            return [
+                {
+                    'name': attr.name,
+                    'type': attr.type,
+                    'description': attr.description
+                }
+                for attr in attributes
+            ]
+        except Exception as e:
+            print(f"Error fetching attributes for web crawl ID {web_id}: {e}")
+            return []
 
 def create_dynamic_model_from_json(attributes: List[Dict]) -> BaseModel:
     """Create a dynamic Pydantic model based on the attributes"""
@@ -88,67 +141,118 @@ def create_dynamic_model_from_json(attributes: List[Dict]) -> BaseModel:
     DynamicModel = create_model('DynamicModel', **field_definitions)
     return DynamicModel
 
+#! setup_genai
+# def setup_genai(api_key: str):
+#     """Configure the Gemini AI API"""
+#     genai.configure(api_key=api_key)
+#     return genai.GenerativeModel('models/gemini-1.5-flash-latest')
+
 def setup_genai(api_key: str):
     """Configure the Gemini AI API"""
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel('gemini-pro-vision')
+    return genai.GenerativeModel('models/gemini-1.5-flash-latest')
+
+#! genPageLink
+# def genPageLink(base_url: str, numberofpage: int = 3) -> List[str]:
+#     """Generate paginated URLs using Gemini AI"""
+#     try:
+#         # Initialize Gemini AI
+#         model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+        
+#         # Prepare the prompt
+#         prompt = f"""
+#         Generate a list of {numberofpage} paginated URLs for the base URL: {base_url}
+#         These should be valid pagination URLs typically used by e-commerce or listing websites.
+#         Return only the full URLs without any explanation, one URL per line.
+#         """
+        
+#         # Generate response
+#         response = model.generate_content(prompt)
+        
+#         # Parse response into a list of URLs
+#         urls = [url.strip() for url in response.text.split('\n') if url.strip()]
+        
+#         # Ensure we have the requested number of URLs
+#         if not urls:
+#             # If AI failed to generate URLs, create default pagination pattern
+#             if '?' in base_url:
+#                 urls = [f"{base_url}&page={i+1}" for i in range(numberofpage)]
+#             else:
+#                 urls = [f"{base_url}?page={i+1}" for i in range(numberofpage)]
+        
+#         print(f"Generated {len(urls)} paginated URLs")
+#         return urls
+    
+#     except Exception as e:
+#         print(f"Error generating paginated URLs: {e}")
+#         # Return fallback URLs
+#         if '?' in base_url:
+#             return [f"{base_url}&page={i+1}" for i in range(numberofpage)]
+#         else:
+#             return [f"{base_url}?page={i+1}" for i in range(numberofpage)]
 
 def genPageLink(base_url: str, numberofpage: int = 3) -> List[str]:
-    """Generate paginated URLs using Gemini AI"""
     try:
-        # Initialize Gemini AI
-        model = genai.GenerativeModel('gemini-pro')
-        
-        # Prepare the prompt
+        model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
         prompt = f"""
         Generate a list of {numberofpage} paginated URLs for the base URL: {base_url}
         These should be valid pagination URLs typically used by e-commerce or listing websites.
         Return only the full URLs without any explanation, one URL per line.
         """
-        
-        # Generate response
         response = model.generate_content(prompt)
-        
-        # Parse response into a list of URLs
         urls = [url.strip() for url in response.text.split('\n') if url.strip()]
-        
-        # Ensure we have the requested number of URLs
         if not urls:
-            # If AI failed to generate URLs, create default pagination pattern
             if '?' in base_url:
                 urls = [f"{base_url}&page={i+1}" for i in range(numberofpage)]
             else:
                 urls = [f"{base_url}?page={i+1}" for i in range(numberofpage)]
-        
         print(f"Generated {len(urls)} paginated URLs")
         return urls
-    
     except Exception as e:
         print(f"Error generating paginated URLs: {e}")
-        # Return fallback URLs
         if '?' in base_url:
             return [f"{base_url}&page={i+1}" for i in range(numberofpage)]
         else:
             return [f"{base_url}?page={i+1}" for i in range(numberofpage)]
+        
+
+#! getHtmlFile
+# def getHtmlFile(url: str) -> tuple:
+#     """Load a URL with undetected_chromedriver and return the driver and page source"""
+#     try:
+#         options = uc.ChromeOptions()
+#         options.add_argument('--headless')
+#         options.add_argument('--no-sandbox')
+#         options.add_argument('--disable-dev-shm-usage')
+        
+#         driver = uc.Chrome(options=options)
+#         driver.get(url)
+        
+#         # Wait for page to load
+#         time.sleep(3)
+        
+#         return driver, driver.page_source
+#     except Exception as e:
+#         print(f"Error loading URL {url}: {e}")
+#         return None, None
 
 def getHtmlFile(url: str) -> tuple:
-    """Load a URL with undetected_chromedriver and return the driver and page source"""
     try:
-        options = uc.ChromeOptions()
-        options.add_argument('--headless')
+        # service = Service(ChromeDriverManager().install())
+        # service = Service(ChromeDriverManager(version="135.0.7049.85").install())
+        service = Service('/usr/local/bin/chromedriver')  # Đường dẫn đến chromedriver bạn vừa cài
+        options = webdriver.ChromeOptions()
+        # options.add_argument('--headless')  # Comment để debug
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
-        
-        driver = uc.Chrome(options=options)
+        driver = webdriver.Chrome(service=service, options=options)
         driver.get(url)
-        
-        # Wait for page to load
         time.sleep(3)
-        
         return driver, driver.page_source
     except Exception as e:
         print(f"Error loading URL {url}: {e}")
         return None, None
+    
+    
 
 def getLinks(driver, selector: str) -> List[str]:
     """Extract links from the page based on the provided CSS selector"""
@@ -193,90 +297,175 @@ def extract_images(soup) -> List[str]:
         print(f"Error extracting images: {e}")
         return []
 
+
+#! getObject()
+# def getObject(driver, url: str, api_key: str, pydantic_model: BaseModel, source_id: str) -> Dict:
+#     """Extract structured data from a detail page using Gemini AI"""
+#     try:
+#         if stop_event.is_set():
+#             return None
+            
+#         # Load the detail page
+#         driver.get(url)
+#         time.sleep(2)
+        
+#         # Get page content
+#         page_source = driver.page_source
+#         soup = BeautifulSoup(page_source, 'html.parser')
+        
+#         # Extract text content
+#         text_content = soup.get_text(separator='\n', strip=True)
+        
+#         # Extract image URLs
+#         image_urls = extract_images(soup)
+        
+#         # Setup Gemini AI
+#         model = setup_genai(api_key)
+        
+#         # Prepare the prompt
+#         prompt = f"""
+#         Extract the following information from this webpage about a product or listing:
+        
+#         {[attr for attr in pydantic_model.__annotations__]}
+        
+#         Return the data in valid JSON format with these fields.
+#         """
+        
+#         # Create content parts for the multimodal request
+#         content_parts = [prompt, text_content]
+        
+#         # Add images if available
+#         for img_url in image_urls:
+#             try:
+#                 img_response = requests.get(img_url)
+#                 if img_response.status_code == 200:
+#                     content_parts.append({
+#                         "mime_type": img_response.headers.get('content-type', 'image/jpeg'),
+#                         "data": img_response.content
+#                     })
+#             except Exception as e:
+#                 print(f"Error processing image {img_url}: {e}")
+        
+#         # Generate response from Gemini
+#         response = model.generate_content(content_parts)
+        
+#         # Extract JSON from response
+#         json_string = response.text
+#         if '```json' in json_string:
+#             json_string = json_string.split('```json')[1].split('```')[0].strip()
+        
+#         extracted_data = json.loads(json_string)
+        
+#         # Save to database
+#         add_web_page_content(source_id, url, extracted_data)
+        
+#         return extracted_data
+    
+#     except Exception as e:
+#         print(f"Error extracting data from {url}: {e}")
+#         return None
+
+
+
 def getObject(driver, url: str, api_key: str, pydantic_model: BaseModel, source_id: str) -> Dict:
     """Extract structured data from a detail page using Gemini AI"""
-    try:
-        if stop_event.is_set():
-            return None
+    with current_app.app_context():  # Thêm ngữ cảnh ứng dụng Flask
+        try:
+            if stop_event.is_set():
+                return None
             
-        # Load the detail page
-        driver.get(url)
-        time.sleep(2)
+            # Load the detail page
+            driver.get(url)
+            time.sleep(2)
+            
+            # Get page content
+            page_source = driver.page_source
+            soup = BeautifulSoup(page_source, 'html.parser')
+            
+            # Extract text content
+            text_content = soup.get_text(separator='\n', strip=True)
+            
+            # Extract image URLs
+            image_urls = extract_images(soup)
+            
+            # Setup Gemini AI
+            model = setup_genai(api_key)
+            
+            # Prepare the prompt
+            prompt = f"""
+            Extract the following information from this webpage about a product or listing:
+            
+            {[attr for attr in pydantic_model.__annotations__]}
+            
+            Return the data in valid JSON format with these fields.
+            """
+            
+            # Create content parts for the multimodal request
+            content_parts = [prompt, text_content]
+            
+            # Add images if available
+            for img_url in image_urls:
+                try:
+                    img_response = requests.get(img_url)
+                    if img_response.status_code == 200:
+                        content_parts.append({
+                            "mime_type": img_response.headers.get('content-type', 'image/jpeg'),
+                            "data": img_response.content
+                        })
+                except Exception as e:
+                    print(f"Error processing image {img_url}: {e}")
+            
+            # Generate response from Gemini
+            response = model.generate_content(content_parts)
+            
+            # Extract JSON from response
+            json_string = response.text
+            if '```json' in json_string:
+                json_string = json_string.split('```json')[1].split('```')[0].strip()
+            
+            extracted_data = json.loads(json_string)
+            
+            # Save to database
+            add_web_page_content(source_id, url, extracted_data)
+            
+            return extracted_data
         
-        # Get page content
-        page_source = driver.page_source
-        soup = BeautifulSoup(page_source, 'html.parser')
-        
-        # Extract text content
-        text_content = soup.get_text(separator='\n', strip=True)
-        
-        # Extract image URLs
-        image_urls = extract_images(soup)
-        
-        # Setup Gemini AI
-        model = setup_genai(api_key)
-        
-        # Prepare the prompt
-        prompt = f"""
-        Extract the following information from this webpage about a product or listing:
-        
-        {[attr for attr in pydantic_model.__annotations__]}
-        
-        Return the data in valid JSON format with these fields.
-        """
-        
-        # Create content parts for the multimodal request
-        content_parts = [prompt, text_content]
-        
-        # Add images if available
-        for img_url in image_urls:
-            try:
-                img_response = requests.get(img_url)
-                if img_response.status_code == 200:
-                    content_parts.append({
-                        "mime_type": img_response.headers.get('content-type', 'image/jpeg'),
-                        "data": img_response.content
-                    })
-            except Exception as e:
-                print(f"Error processing image {img_url}: {e}")
-        
-        # Generate response from Gemini
-        response = model.generate_content(content_parts)
-        
-        # Extract JSON from response
-        json_string = response.text
-        if '```json' in json_string:
-            json_string = json_string.split('```json')[1].split('```')[0].strip()
-        
-        extracted_data = json.loads(json_string)
-        
-        # Save to database
-        add_web_page_content(source_id, url, extracted_data)
-        
-        return extracted_data
-    
-    except Exception as e:
-        print(f"Error extracting data from {url}: {e}")
-        return None
+        except Exception as e:
+            print(f"Error extracting data from {url}: {e}")
+            return None
 
 def add_web_page_content(source_id: str, url: str, content: Dict):
     """Save the extracted content to the database"""
     try:
-        result = Result(
-            source_id=uuid.UUID(source_id),
-            url=url,
-            contents=content,
-            time_stamp=datetime.now()
-        )
+        # result = Result(
+        #     source_id=uuid.UUID(source_id),
+        #     url=url,
+        #     contents=content,
+        #     time_stamp=datetime.now()
+        # )
         
-        db.session.add(result)
-        db.session.commit()
+        # db.session.add(result)
+        # db.session.commit()
+        with current_app.app_context():  # Thêm ngữ cảnh ứng dụng
+            result = Result(
+                source_id=uuid.UUID(source_id),
+                url=url,
+                contents=content,
+                time_stamp=datetime.now()
+            )
+            db.session.add(result)
+            db.session.commit()
+            print(f"Saved content from {url} to database")
         
         print(f"Saved content from {url} to database")
     
     except Exception as e:
-        db.session.rollback()
+        # db.session.rollback()
+        with current_app.app_context():  # Thêm ngữ cảnh cho rollback
+            db.session.rollback()
         print(f"Error saving content to database: {e}")
+
+
 
 def crawlThread(urls: List[str], config: Dict, api_key: str, pydantic_model: BaseModel, source_id: str):
     """Process a subset of URLs in a separate thread"""
