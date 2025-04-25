@@ -136,15 +136,150 @@ from app.services.crawler import (
     stop_event
 )
 
-def run_crawler(web_id: str, app):
-    """
-    Run the web crawler for all active sources or a specific source if web_id is provided
-    """
-    try:
-        # Reset the stop event
-        stop_event.clear()
+# def run_crawler(web_id: str, app):
+#     """
+#     Run the web crawler for all active sources or a specific source if web_id is provided
+#     """
+#     try:
+#         # Reset the stop event
+#         stop_event.clear()
         
-        # Get API keys from environment
+#         # Get API keys from environment
+#         api_key = os.getenv("GOOGLE_API_KEY")
+#         print(f"API KEY: {api_key}")
+#         if not api_key:
+#             print("No GOOGLE_API_KEY found in environment variables")
+#             return False
+        
+#         # Get web crawl sources
+#         sources = get_all_web_crawl(app)  # Truyền app vào
+#         if web_id:
+#             sources = [s for s in sources if s['id'] == web_id]
+        
+#         if not sources:
+#             print(f"No active web crawl sources found{' for ID ' + web_id if web_id else ''}")
+#             return False
+        
+#         # Process each source
+#         for source in sources:
+#             print(f"Processing web crawl source: {source['url']}")
+            
+#             # Get attributes for this source
+#             attributes = get_web_crawl_attributes_by_web_crawl_id(source['id'], app)  # Truyền app
+#             if not attributes:
+#                 print(f"No attributes defined for source {source['id']}")
+#                 continue
+            
+#             # Create dynamic Pydantic model
+#             pydantic_model = create_dynamic_model_from_json(attributes)
+            
+#             # Generate paginated URLs
+#             page_urls = genPageLink(source['url'], numberofpage=3)
+            
+#             # Determine number of threads to use
+#             num_threads = min(source['threads'], 3)  # Cap at 3 threads
+            
+#             # Split URLs among threads
+#             url_chunks: List[List[str]] = [[] for _ in range(num_threads)]
+#             for i, url in enumerate(page_urls):
+#                 url_chunks[i % num_threads].append(url)
+            
+#             # Create and start threads
+#             threads = []
+#             for i in range(num_threads):
+#                 thread = threading.Thread(
+#                     target=crawlThread,
+#                     args=(url_chunks[i], source, api_key, pydantic_model, source['id'], app)  # Truyền app
+#                 )
+#                 thread.start()
+#                 threads.append(thread)
+            
+#             # Wait for all threads to complete
+#             for thread in threads:
+#                 thread.join()
+            
+#             print(f"Completed processing source: {source['url']}")
+        
+#         return True
+    
+#     except Exception as e:
+#         print(f"Error in run_crawler: {e}")
+#         return False
+
+# def run_crawler(web_id: str, app):
+#     """
+#     Run the web crawler for all active sources or a specific source if web_id is provided
+#     """
+#     try:
+#         # Reset the stop event
+#         stop_event.clear()
+        
+#         # Get API keys from environment
+#         api_key = os.getenv("GOOGLE_API_KEY")
+#         print(f"API KEY: {api_key}")
+#         if not api_key:
+#             print("No GOOGLE_API_KEY found in environment variables")
+#             return False
+        
+#         # Get web crawl sources
+#         with app.app_context():  # Thiết lập app_context
+#             sources = get_all_web_crawl()
+#             if web_id:
+#                 sources = [s for s in sources if s['id'] == web_id]
+            
+#             if not sources:
+#                 print(f"No active web crawl sources found{' for ID ' + web_id if web_id else ''}")
+#                 return False
+            
+#             # Process each source
+#             for source in sources:
+#                 print(f"Processing web crawl source: {source['url']}")
+                
+#                 # Get attributes for this source
+#                 attributes = get_web_crawl_attributes_by_web_crawl_id(source['id'])
+#                 if not attributes:
+#                     print(f"No attributes defined for source {source['id']}")
+#                     continue
+                
+#                 # Create dynamic Pydantic model
+#                 pydantic_model = create_dynamic_model_from_json(attributes)
+                
+#                 # Generate paginated URLs
+#                 page_urls = genPageLink(source['url'], numberofpage=3)
+                
+#                 # Determine number of threads to use
+#                 num_threads = min(source['threads'], 3)  # Cap at 3 threads
+                
+#                 # Split URLs among threads
+#                 url_chunks: List[List[str]] = [[] for _ in range(num_threads)]
+#                 for i, url in enumerate(page_urls):
+#                     url_chunks[i % num_threads].append(url)
+                
+#                 # Create and start threads
+#                 threads = []
+#                 for i in range(num_threads):
+#                     thread = threading.Thread(
+#                         target=crawlThread,
+#                         args=(url_chunks[i], source, api_key, pydantic_model, source['id'], app)  # Truyền app
+#                     )
+#                     thread.start()
+#                     threads.append(thread)
+                
+#                 # Wait for all threads to complete
+#                 for thread in threads:
+#                     thread.join()
+                
+#                 print(f"Completed processing source: {source['url']}")
+        
+#         return True
+    
+#     except Exception as e:
+#         print(f"Error in run_crawler: {e}")
+#         return False
+
+def run_crawler(web_id: str, app):
+    try:
+        stop_event.clear()
         api_key = os.getenv("GOOGLE_API_KEY")
         print(f"API KEY: {api_key}")
         if not api_key:
@@ -152,55 +287,51 @@ def run_crawler(web_id: str, app):
             return False
         
         # Get web crawl sources
-        sources = get_all_web_crawl(app)  # Truyền app vào
-        if web_id:
-            sources = [s for s in sources if s['id'] == web_id]
-        
-        if not sources:
-            print(f"No active web crawl sources found{' for ID ' + web_id if web_id else ''}")
-            return False
-        
-        # Process each source
-        for source in sources:
-            print(f"Processing web crawl source: {source['url']}")
+        with app.app_context():
+            sources = get_all_web_crawl()
+            if web_id:
+                sources = [s for s in sources if s['id'] == web_id]
             
-            # Get attributes for this source
-            attributes = get_web_crawl_attributes_by_web_crawl_id(source['id'], app)  # Truyền app
-            if not attributes:
-                print(f"No attributes defined for source {source['id']}")
-                continue
+            if not sources:
+                print(f"No active web crawl sources found{' for ID ' + web_id if web_id else ''}")
+                return False
             
-            # Create dynamic Pydantic model
-            pydantic_model = create_dynamic_model_from_json(attributes)
+            # Process each source
+            for source in sources:
+                print(f"Processing web crawl source: {source['url']}")
+                
+                attributes = get_web_crawl_attributes_by_web_crawl_id(source['id'])
+                if not attributes:
+                    print(f"No attributes defined for source {source['id']}")
+                    continue
+                
+                pydantic_model = create_dynamic_model_from_json(attributes)
+                page_urls = genPageLink(source['url'], numberofpage=3)
+                num_threads = min(source['threads'], 3)
+                
+                # Split URLs among threads
+                url_chunks = [[] for _ in range(num_threads)]
+                for i, url in enumerate(page_urls):
+                    url_chunks[i % num_threads].append(url)
+                
+                # Create and start threads
+                threads = []
+                for i in range(num_threads):
+                    # Tạo một bản sao của app context cho mỗi thread
+                    ctx = app.app_context()
+                    thread = threading.Thread(
+                        target=crawlThread,
+                        args=(url_chunks[i], source, api_key, pydantic_model, source['id'], ctx)
+                    )
+                    thread.start()
+                    threads.append(thread)
+                
+                for thread in threads:
+                    thread.join()
+                
+                print(f"Completed processing source: {source['url']}")
             
-            # Generate paginated URLs
-            page_urls = genPageLink(source['url'], numberofpage=3)
-            
-            # Determine number of threads to use
-            num_threads = min(source['threads'], 3)  # Cap at 3 threads
-            
-            # Split URLs among threads
-            url_chunks: List[List[str]] = [[] for _ in range(num_threads)]
-            for i, url in enumerate(page_urls):
-                url_chunks[i % num_threads].append(url)
-            
-            # Create and start threads
-            threads = []
-            for i in range(num_threads):
-                thread = threading.Thread(
-                    target=crawlThread,
-                    args=(url_chunks[i], source, api_key, pydantic_model, source['id'], app)  # Truyền app
-                )
-                thread.start()
-                threads.append(thread)
-            
-            # Wait for all threads to complete
-            for thread in threads:
-                thread.join()
-            
-            print(f"Completed processing source: {source['url']}")
-        
-        return True
+            return True
     
     except Exception as e:
         print(f"Error in run_crawler: {e}")
