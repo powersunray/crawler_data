@@ -1,3 +1,4 @@
+#crawler.py
 import time
 import json
 import uuid
@@ -186,88 +187,6 @@ def add_web_page_content(source_id: str, url: str, content: Dict, ctx):
     except Exception as e:
         db.session.rollback()
         print(f"Error saving content to database: {e}")
-
-# def getObject(driver, url: str, api_key: str, pydantic_model: BaseModel, source_id: str, ctx) -> Dict:
-#     """Extract structured data from a detail page using Gemini AI"""
-#     try:
-#         if stop_event.is_set():
-#             return None
-            
-#         driver.get(url)
-#         time.sleep(3)
-        
-#         page_source = driver.page_source
-#         soup = BeautifulSoup(page_source, 'html.parser')
-        
-#         text_content = soup.get_text(separator='\n', strip=True)
-#         image_urls = extract_images(soup)
-        
-#         model = setup_genai(api_key)
-        
-#         # Cải thiện retry logic
-#         max_retries = 5  # Tăng số lần retry
-#         base_delay = 5  # Delay cơ bản
-        
-#         for attempt in range(max_retries):
-#             try:
-#                 prompt = f"""
-#                 Extract the following information from this webpage about a product or listing:
-#                 {[attr for attr in pydantic_model.__annotations__]}
-#                 Return the data in valid JSON format with these fields.
-#                 """
-                
-#                 content_parts = [prompt, text_content]
-                
-#                 # Giới hạn số lượng ảnh xuống 1 ảnh
-#                 for img_url in image_urls[:1]:
-#                     try:
-#                         img_response = requests.get(img_url)
-#                         if img_response.status_code == 200:
-#                             content_parts.append({
-#                                 "mime_type": img_response.headers.get('content-type', 'image/jpeg'),
-#                                 "data": img_response.content
-#                             })
-#                     except Exception as e:
-#                         print(f"Error processing image {img_url}: {e}")
-#                         continue
-                
-#                 response = model.generate_content(content_parts)
-                
-#                 # Xử lý response text cẩn thận hơn
-#                 json_string = response.text
-#                 if '```json' in json_string:
-#                     json_string = json_string.split('```json')[1].split('```')[0].strip()
-#                 elif '```' in json_string:
-#                     json_string = json_string.split('```')[1].strip()
-                
-#                 # Validate JSON trước khi parse
-#                 if not json_string:
-#                     raise ValueError("Empty JSON response")
-                    
-#                 extracted_data = json.loads(json_string)
-                
-#                 if not isinstance(extracted_data, dict):
-#                     raise ValueError("Extracted data is not a dictionary")
-                
-#                 # Lưu vào database
-#                 add_web_page_content(source_id, url, extracted_data, ctx)
-#                 print(f"Successfully processed: {url}")
-                
-#                 return extracted_data
-                
-#             except Exception as e:
-#                 if "429" in str(e) and attempt < max_retries - 1:
-#                     retry_delay = base_delay * (2 ** attempt)  # Exponential backoff
-#                     print(f"Rate limit hit, retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
-#                     time.sleep(retry_delay)
-#                     continue
-#                 else:
-#                     print(f"Error extracting data from {url}: {e}")
-#                     return None
-        
-#     except Exception as e:
-#         print(f"Error extracting data from {url}: {e}")
-#         return None
 
 def getObject(driver, url: str, api_key: str, pydantic_model: BaseModel, source_id: str, ctx) -> Dict:
     """Extract structured data from a detail page using Gemini AI"""
