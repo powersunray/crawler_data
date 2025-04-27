@@ -20,9 +20,11 @@ attributes_bp = Blueprint("attributes", __name__)
             "schema": {
                 "type": "object",
                 "properties": {
-                    "keyword": {"type": "string", "example": "test_keyword"},
+                    "name": {"type": "string", "example": "test_keyword"},
                     "source_id": {"type": "string", "example": "123e4567-e89b-12d3-a456-426614174000"},
-                    "is_active": {"type": "boolean", "example": True}
+                    "type": {"type": "string", "example": "test_string"},
+                    "description": {"type": "string", "example": "test_description"},                    
+                    
                 },
                 "required": ["keyword", "source_id"]
             }
